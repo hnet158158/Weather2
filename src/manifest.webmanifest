@@ -1,0 +1,19 @@
+{
+  "name": "Погода — бумажное PWA",
+  "short_name": "Погода",
+  "description": "Спокойное бумажное PWA погоды с тремя провайдерами",
+  "lang": "ru",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#f5f0e8",
+  "background_color": "#f5f0e8",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

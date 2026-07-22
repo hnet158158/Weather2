@@ -1,0 +1,43 @@
+# @file deploy-pages.yml
+# @brief GitHub Actions: деплой src/ на GitHub Pages (vanilla PWA, без сборки)
+# @context{Срабатывает на push в main; публикует содержимое src/ как корень Pages}
+# @strategy{Использует официальные actions: upload-pages-artifact + deploy-pages}
+# GREP_SUMMARY: deploy, GitHub Pages, CI, static, PWA, vanilla, no-build
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact (папка src/ → корень Pages)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./src
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

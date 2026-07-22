@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<!--
+  @file index.html
+  @brief Точка входа Weather PWA: app-shell разметка + встроенные стили/скины + PWA-связки
+  @context{Загружает app.js (classic, defer); ссылается на manifest.webmanifest; рендерится из app.js Module 12/14}
+  @strategy{Один html (D-INLINE-CSS); скины через [data-theme] + CSS-переменные; system font stacks (D-SYSTEM-FONTS); a11y: aria-live, role, focus-ring}
+  @keywords{APP_SHELL, PWA, THEMES, A11Y, CSS_VARIABLES}
+  GREP_SUMMARY: index.html, app-shell, PWA, themes, paper-fir, paper-night, paper-cool, CSS variables, a11y, aria-live, skeleton, manifest
+-->
+<html lang="ru" data-theme="paper-fir">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Спокойное бумажное PWA погоды">
+  <title>Погода</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#f5f0e8">
+
+  <style>
+    /* ============================================================
+       СКИНЫ (CSS-переменные на [data-theme])
+       ============================================================ */
+
+    /* paper-fir — светлый дефолт: тёплая бумага + сосновый акцент */
+    [data-theme="paper-fir"] {
+      --paper: #f5f0e8;
+      --ink: #2c2a26;
+      --muted: #6e695f;
+      --accent: #2d5a3d;
+      --accent-ink: #f5f0e8;
+      --line: #d8d2c6;
+      --chart-line: #2d5a3d;
+      --chart-fill-from: rgba(45, 90, 61, 0.18);
+      --chart-fill-to: rgba(45, 90, 61, 0.02);
+      --focus: #2d5a3d;
+      --skeleton: #e8e2d8;
+      --overlay: rgba(245, 240, 232, 0.92);
+    }
+
+    /* paper-night — тёмный: тёплая ночная бумага */
+    [data-theme="paper-night"] {
+      --paper: #2a2723;
+      --ink: #d4cec4;
+      --muted: #8a8478;
+      --accent: #5a9e72;
+      --accent-ink: #1a1815;
+      --line: #3d3a34;
+      --chart-line: #5a9e72;
+      --chart-fill-from: rgba(90, 158, 114, 0.2);
+      --chart-fill-to: rgba(90, 158, 114, 0.02);
+      --focus: #5a9e72;
+      --skeleton: #35322c;
+      --overlay: rgba(42, 39, 35, 0.92);
+    }
+
+    /* paper-cool — светлый альтернативный: прохладная серо-голубая бумага */
+    [data-theme="paper-cool"] {
+      --paper: #eef1f4;
+      --ink: #2a2e33;
+      --muted: #5f6672;
+      --accent: #3a7a7a;
+      --accent-ink: #eef1f4;
+      --line: #d1d8e0;
+      --chart-line: #3a7a7a;
+      --chart-fill-from: rgba(58, 122, 122, 0.16);
+      --chart-fill-to: rgba(58, 122, 122, 0.02);
+      --focus: #3a7a7a;
+      --skeleton: #dde3ea;
+      --overlay: rgba(238, 241, 244, 0.92);
+    }
+
+    /* ============================================================
+       ШРИФТОВЫЕ РОЛИ (system stacks, D-SYSTEM-FONTS)
+       ============================================================ */
+    :root {
+      --font-display: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+      --font-title: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+      --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* ============================================================
+       БАЗА
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100dvh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      /* Тонкая бумажная текстура (CSS-only, без внешних картинок) */
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0,0,0,0.008) 2px,
+          rgba(0,0,0,0.008) 4px
+        );
+    }
+
+    /* Focus-ring (VR-A11Y-2) */
+    :focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .app-container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+      position: relative;
+    }
+
+    /* ============================================================
+       ШАПКА (FR-DISP-1)
+       ============================================================ */
+    .app-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .header-info { flex: 1; min-width: 0; }
+
+    .city-name {
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1.5rem;
+      line-height: 1.2;
+      color: var(--ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .city-coords {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+      letter-spacing: 0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--muted);
+      transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+    }
+    .icon-btn:hover { color: var(--ink); border-color: var(--muted); }
+    .icon-btn:active { background-color: var(--line); }
+    .icon-btn svg { width: 1.1rem; height: 1.1rem; }
+
+    /* ============================================================
+       HERO (FR-DISP-2)
+       ============================================================ */
+    .hero {
+      margin-bottom: 1.75rem;
+    }
+
+    .hero-temp {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: 5rem;
+      line-height: 1;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+
+    .hero-temp .unit {
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--muted);
+      margin-left: 0.15rem;
+      vertical-align: super;
+    }
+
+    .hero-condition {
+      font-family: var(--font-sans);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--ink);
+      margin-top: 0.35rem;
+      text-transform: capitalize;
+    }
+
+    /* ============================================================
+       3 МЕТРИКИ (FR-DISP-3)
+       ============================================================ */
+    .metrics-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric-item { flex: 1; text-align: center; }
+
+    .metric-label {
+      font-family: var(--font-sans);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .metric-value {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    /* ============================================================
+       РАСШИРЕННЫЙ БЛОК «СЕЙЧАС» (FR-DISP-4)
+       ============================================================ */
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 1.75rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .detail-item { text-align: center; }
+
+    .detail-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.15rem;
+    }
+
+    .detail-value {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--ink);
+    }
+
+    /* ============================================================
+       ИНДИКАТОР ОБНОВЛЕНИЯ (FR-REF-2/3)
+       ============================================================ */
+    .update-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      min-height: 1.75rem;
+    }
+
+    .update-text {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .update-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      color: var(--muted);
+      transition: color 0.15s, transform 0.15s;
+    }
+    .refresh-btn:hover { color: var(--accent); }
+    .refresh-btn svg { width: 1rem; height: 1rem; }
+
+    /* Спиннер (спокойный) */
+    .spinner {
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid var(--line);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+    .spinner.active { display: block; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================================================
+       ПОЧАСОВОЙ ГРАФИК (FR-DISP-5)
+       ============================================================ */
+    .chart-section {
+      margin-bottom: 1.75rem;
+    }
+
+    .chart-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 0.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--line) transparent;
+    }
+
+    .chart-scroll::-webkit-scrollbar { height: 4px; }
+    .chart-scroll::-webkit-scrollbar-track { background: transparent; }
+    .chart-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+
+    .chart-svg {
+      display: block;
+      height: 160px;
+    }
+
+    /* Анимация отрисовки линии (draw-in) */
+    .chart-line-path {
+      stroke-dasharray: 2000;
+      stroke-dashoffset: 2000;
+      animation: drawLine 1.2s ease-out forwards;
+    }
+
+    @keyframes drawLine {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* ============================================================
+       ПОЧАСОВАЯ ТАБЛИЦА (FR-DISP-6/8)
+       ============================================================ */
+    .table-section {
+      margin-bottom: 2rem;
+    }
+
+    .day-header {
+      background-color: var(--accent);
+      color: var(--accent-ink);
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-align: center;
+      padding: 0.4rem 0.75rem;
+      letter-spacing: 0.03em;
+      border-radius: 4px;
+      margin: 1rem 0 0.25rem;
+    }
+    .day-header:first-child { margin-top: 0; }
+
+    .hour-row {
+      display: grid;
+      grid-template-columns: 3.2rem 2rem 3.5rem 1fr 3.5rem 3.5rem;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.25rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.85rem;
+      transition: background-color 0.1s;
+    }
+    .hour-row:hover { background-color: var(--skeleton); }
+
+    .hour-time {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .hour-icon { color: var(--muted); display: flex; align-items: center; }
+    .hour-icon svg { width: 1.1rem; height: 1.1rem; }
+
+    .hour-temp {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .hour-wind {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+    .hour-wind .wind-arrow { width: 0.7rem; height: 0.7rem; color: var(--muted); flex-shrink: 0; }
+
+    .hour-humidity, .hour-precip {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* ============================================================
+       СОСТОЯНИЯ (FR-STATE-*)
+       ============================================================ */
+    .state-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3rem 1.5rem;
+      gap: 1rem;
+    }
+    .state-overlay.visible { display: flex; }
+
+    .state-title {
+      font-family: var(--font-title);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .state-text {
+      font-size: 0.9rem;
+      color: var(--muted);
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .state-btn {
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-ink);
+      background-color: var(--accent);
+      padding: 0.55rem 1.5rem;
+      border-radius: 6px;
+      transition: opacity 0.15s;
+    }
+    .state-btn:hover { opacity: 0.85; }
+
+    /* Скелетон (FR-STATE-1) */
+    .skeleton-block {
+      background: var(--skeleton);
+      border-radius: 4px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ============================================================
+       ОФЛАЙН-БЕЙДЖ (FR-PWA-3)
+       ============================================================ */
+    .offline-badge {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      padding: 0.3rem 0.6rem;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+    .offline-badge.visible { display: inline-flex; }
+    .offline-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    /* ============================================================
+       ПАНЕЛЬ НАСТРОЕК (FR-SET-*)
+       ============================================================ */
+    .settings-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 90;
+    }
+    .settings-backdrop.open { display: block; }
+
+    .settings-panel {
+      position: fixed;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: min(360px, 90vw);
+      background: var(--paper);
+      border-left: 1px solid var(--line);
+      z-index: 100;
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+    .settings-panel.open { transform: translateX(0); }
+
+    .settings-title {
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1.15rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .settings-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .settings-group-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .settings-option {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.1s;
+      font-size: 0.9rem;
+    }
+    .settings-option:hover { background-color: var(--skeleton); }
+    .settings-option.selected { background-color: var(--skeleton); font-weight: 600; }
+
+    .settings-option input[type="radio"] {
+      accent-color: var(--accent);
+      width: 1rem;
+      height: 1rem;
+    }
+
+    /* Поиск локации */
+    .location-search {
+      width: 100%;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      color: var(--ink);
+      margin-bottom: 0.5rem;
+    }
+    .location-search::placeholder { color: var(--muted); }
+    .location-search:focus { border-color: var(--accent); outline: none; }
+
+    .search-results {
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 0.5rem;
+    }
+
+    .search-result-item {
+      padding: 0.5rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background-color 0.1s;
+    }
+    .search-result-item:hover { background-color: var(--skeleton); }
+
+    .search-result-name { font-weight: 600; }
+    .search-result-sub { font-size: 0.75rem; color: var(--muted); }
+
+    .recent-list { list-style: none; }
+    .recent-item {
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background-color 0.1s;
+    }
+    .recent-item:hover { background-color: var(--skeleton); }
+
+    .geo-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 600;
+      padding: 0.5rem 0;
+    }
+    .geo-btn svg { width: 1rem; height: 1rem; }
+
+    /* О приложении */
+    .about-text {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ============================================================
+       АДАПТИВНОСТЬ
+       ============================================================ */
+    @media (max-width: 480px) {
+      .app-container { padding: 1rem 1rem 2.5rem; }
+      .hero-temp { font-size: 3.5rem; }
+      .metrics-row { gap: 1rem; }
+      .hour-row {
+        grid-template-columns: 2.8rem 1.6rem 3rem 1fr 3rem 3rem;
+        gap: 0.35rem;
+        font-size: 0.8rem;
+      }
+    }
+
+    /* ============================================================
+       УТИЛИТЫ
+       ============================================================ */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app-container" id="app">
+
+    <!-- Офлайн-бейдж (FR-PWA-3) -->
+    <div class="offline-badge" id="offline-badge" role="status">
+      <span class="dot" aria-hidden="true"></span>
+      <span>Офлайн</span>
+    </div>
+
+    <!-- Шапка (FR-DISP-1) -->
+    <header class="app-header">
+      <div class="header-info">
+        <h1 class="city-name" id="city-name">—</h1>
+        <p class="city-coords" id="city-coords"></p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="btn-geolocate" type="button"
+                aria-label="Определить моё местоположение" title="Моё местоположение">
+          <!-- иконка-крестик/прицел вставляется из app.js -->
+        </button>
+        <button class="icon-btn" id="btn-settings" type="button"
+                aria-label="Открыть настройки" title="Настройки">
+          <!-- иконка-шестерня вставляется из app.js -->
+        </button>
+      </div>
+    </header>
+
+    <!-- Основной контент (скрывается при empty/error-state) -->
+    <main id="main-content">
+
+      <!-- Hero (FR-DISP-2) -->
+      <section class="hero" id="hero" aria-label="Текущая температура">
+        <div class="hero-temp" id="hero-temp">
+          <span id="temp-value">—</span><span class="unit">°C</span>
+        </div>
+        <p class="hero-condition" id="hero-condition"></p>
+      </section>
+
+      <!-- 3 метрики (FR-DISP-3) -->
+      <section class="metrics-row" id="metrics" aria-label="Ключевые показатели">
+        <div class="metric-item">
+          <div class="metric-label">Ветер</div>
+          <div class="metric-value" id="metric-wind">—</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Влажность</div>
+          <div class="metric-value" id="metric-humidity">—</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Осадки</div>
+          <div class="metric-value" id="metric-precip">—</div>
+        </div>
+      </section>
+
+      <!-- Расширенный блок «сейчас» (FR-DISP-4) -->
+      <section class="details-grid" id="details" aria-label="Подробности">
+        <div class="detail-item">
+          <div class="detail-label">Ощущается</div>
+          <div class="detail-value" id="detail-feels">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Давление</div>
+          <div class="detail-value" id="detail-pressure">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">УФ-индекс</div>
+          <div class="detail-value" id="detail-uv">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Восход</div>
+          <div class="detail-value" id="detail-sunrise">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Закат</div>
+          <div class="detail-value" id="detail-sunset">—</div>
+        </div>
+      </section>
+
+      <!-- Индикатор обновления (FR-REF-2/3) -->
+      <div class="update-bar" id="update-bar" aria-live="polite">
+        <span class="update-text" id="update-text"></span>
+        <div class="update-actions">
+          <div class="spinner" id="spinner" aria-hidden="true"></div>
+          <button class="refresh-btn" id="btn-refresh" type="button"
+                  aria-label="Обновить прогноз" title="Обновить">
+            <!-- иконка refresh вставляется из app.js -->
+          </button>
+        </div>
+      </div>
+
+      <!-- Почасовой график (FR-DISP-5) -->
+      <section class="chart-section" id="chart-section" aria-label="График температуры">
+        <div class="chart-scroll" id="chart-scroll">
+          <!-- SVG-график вставляется из app.js -->
+        </div>
+      </section>
+
+      <!-- Почасовая таблица (FR-DISP-6/8) -->
+      <section class="table-section" id="table-section" aria-label="Прогноз по часам" aria-live="polite">
+        <!-- Таблица по дням вставляется из app.js -->
+      </section>
+
+    </main>
+
+    <!-- Состояния (FR-STATE-*) -->
+    <div class="state-overlay" id="state-skeleton" role="status" aria-label="Загрузка">
+      <div class="skeleton-block" style="width:120px;height:64px;margin-bottom:0.5rem"></div>
+      <div class="skeleton-block" style="width:180px;height:16px;margin-bottom:1.5rem"></div>
+      <div class="skeleton-block" style="width:100%;height:1px;margin-bottom:1rem"></div>
+      <div class="skeleton-block" style="width:100%;height:120px;margin-bottom:1rem"></div>
+      <div class="skeleton-block" style="width:100%;height:200px"></div>
+    </div>
+
+    <div class="state-overlay" id="state-empty">
+      <div class="state-title">Добро пожаловать</div>
+      <p class="state-text">Выберите город через поиск или разрешите доступ к местоположению, чтобы увидеть прогноз погоды.</p>
+      <button class="state-btn" id="btn-empty-settings" type="button">Выбрать город</button>
+    </div>
+
+    <div class="state-overlay" id="state-error">
+      <div class="state-title">Не удалось загрузить</div>
+      <p class="state-text" id="error-message">Проверьте подключение и попробуйте снова.</p>
+      <button class="state-btn" id="btn-retry" type="button">Повторить</button>
+    </div>
+
+    <div class="state-overlay" id="state-geo-denied">
+      <div class="state-title">Геолокация недоступна</div>
+      <p class="state-text">Доступ к местоположению отклонён или не поддерживается. Воспользуйтесь поиском города.</p>
+      <button class="state-btn" id="btn-geo-search" type="button">Найти город</button>
+    </div>
+
+  </div>
+
+  <!-- Панель настроек (FR-SET-*) -->
+  <div class="settings-backdrop" id="settings-backdrop"></div>
+  <aside class="settings-panel" id="settings-panel" role="dialog" aria-label="Настройки" aria-modal="true">
+    <div class="settings-title">
+      <span>Настройки</span>
+      <button class="icon-btn" id="btn-close-settings" type="button" aria-label="Закрыть настройки">
+        <!-- иконка закрытия из app.js -->
+      </button>
+    </div>
+
+    <!-- Провайдер (FR-SET-2) -->
+    <div class="settings-group">
+      <div class="settings-group-label">Источник данных</div>
+      <div id="provider-options">
+        <!-- radio-кнопки провайдеров из app.js -->
+      </div>
+    </div>
+
+    <!-- Локация (FR-SET-2, FR-LOC-*) -->
+    <div class="settings-group">
+      <div class="settings-group-label">Город</div>
+      <input class="location-search" id="location-search" type="search"
+             placeholder="Поиск города…" autocomplete="off"
+             aria-label="Поиск города">
+      <ul class="search-results" id="search-results" role="listbox" aria-label="Результаты поиска"></ul>
+      <div id="no-results" class="hidden" style="font-size:0.8rem;color:var(--muted);padding:0.4rem 0.6rem">
+        Ничего не найдено. Попробуйте другой запрос.
+      </div>
+      <button class="geo-btn" id="btn-geo-settings" type="button">
+        <!-- иконка + текст из app.js -->
+        <span>Моё местоположение</span>
+      </button>
+      <div class="settings-group-label" style="margin-top:0.75rem">Недавние</div>
+      <ul class="recent-list" id="recent-list" aria-label="Недавние поиски"></ul>
+    </div>
+
+    <!-- Интервал автообновления (FR-SET-3) -->
+    <div class="settings-group">
+      <div class="settings-group-label">Автообновление</div>
+      <div id="refresh-options">
+        <!-- radio-кнопки интервалов из app.js -->
+      </div>
+    </div>
+
+    <!-- Скины (FR-SET-2, FR-THM-*) -->
+    <div class="settings-group">
+      <div class="settings-group-label">Оформление</div>
+      <div id="theme-options">
+        <!-- radio-кнопки скинов из app.js -->
+      </div>
+    </div>
+
+    <!-- О приложении -->
+    <div class="settings-group">
+      <div class="settings-group-label">О приложении</div>
+      <p class="about-text">
+        Бумажное PWA погоды. Данные: Open-Meteo, wttr.in, MET Norway (без API-ключей).
+        Все данные обрабатываются локально в вашем браузере. Ничего не отправляется на сторонние серверы, кроме запросов к выбранным провайдерам погоды.
+      </p>
+    </div>
+  </aside>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
