@@ -1909,10 +1909,28 @@
       return;
     }
     try {
-      navigator.serviceWorker.register('sw.js').then(function () {
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
         Logger.info('SW_REGISTER', 'registered', '', 'void');
+        // Авто-prompt перезагрузки при обнаружении нового воркера
+        reg.addEventListener('updatefound', function () {
+          var newSW = reg.installing;
+          if (!newSW) { return; }
+          newSW.addEventListener('statechange', function () {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              // Новый воркер установлен → страница контролируется старым → reload
+              Logger.info('SW_UPDATE', 'installed', '', 'reload');
+              window.location.reload();
+            }
+          });
+        });
+        // Принудительная проверка обновления при каждом запуске
+        reg.update();
       }).catch(function (err) {
         Logger.warn('SW_REGISTER', 'skipped', 'error=' + err.message, 'void');
+      });
+      // Слушаем событие 'controllerchange' (новый SW активирован)
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        window.location.reload();
       });
     } catch (e) {
       Logger.warn('SW_REGISTER', 'skipped', 'exception', 'void');
