@@ -5,7 +5,11 @@
 // @keywords{PWA, SERVICE_WORKER, CACHE, SWR, OFFLINE}
 // GREP_SUMMARY: sw.js, service worker, PWA, precache, stale-while-revalidate, offline, app-shell, cache API
 
-var CACHE_NAME = 'weather-pwa-v1';
+// ВАЖНО: при каждом релизе с изменениями app.js/index.html БАМПИТЬ версию (vN→vN+1).
+// Иначе sw.js остаётся байт-идентичным → браузер не переустанавливает воркер →
+// клиенты продолжают получать старый закэшированный app-shell из предыдущего кэша.
+// На activate (ниже) старые кэши (key !== CACHE_NAME) удаляются автоматически.
+var CACHE_NAME = 'weather-pwa-v2';
 var APP_SHELL = [
   './',
   './index.html',
