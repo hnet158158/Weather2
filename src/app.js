@@ -109,8 +109,11 @@
     uvIndex: 'УФ-индекс',
     sunrise: 'Восход',
     sunset: 'Закат',
-    updated: 'обновлено в',
-    updatedAgo: 'мин назад',
+    updatedJust: 'Только что',
+    updatedMin: 'Обновлено',
+    minAgo: 'мин назад',
+    hAgo: 'ч назад',
+    dAgo: 'дн назад',
     loading: 'Загрузка…',
     offline: 'Офлайн',
     retry: 'Повторить',
@@ -234,18 +237,21 @@
 
   // region FUNC_fmtUpdatedAt
   // @startcontract FMT_UPDATED_AT
-  // @brief Форматировать время последнего обновления: «обновлено в 12:50» или «N мин назад»
+  // @brief Относительное время обновления: «Обновлено 5 мин назад» / «N ч назад»
   // @keywords{FORMAT, RELATIVE_TIME}
-  // @invariant{Если прошло > 60 мин — показывать абсолютное время}
+  // @invariant{Всегда относительное, никогда абсолютное время}
   // @param[in] epochMs миллисекунды UTC момента обновления
   // @return строка
   // @endcontract FMT_UPDATED_AT
   function fmtUpdatedAt(epochMs) {
     if (!epochMs) { return ''; }
     var diffMin = Math.floor((Date.now() - epochMs) / 60000);
-    if (diffMin < 1) { return STR.updated + ' ' + fmtTimeHM(epochMs, undefined); }
-    if (diffMin < 60) { return diffMin + ' ' + STR.updatedAgo; }
-    return STR.updated + ' ' + fmtTimeHM(epochMs, undefined);
+    if (diffMin < 1) { return STR.updatedJust; }
+    if (diffMin < 60) { return STR.updatedMin + ' ' + diffMin + ' ' + STR.minAgo; }
+    var diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) { return STR.updatedMin + ' ' + diffH + ' ' + STR.hAgo; }
+    var diffD = Math.floor(diffH / 24);
+    return STR.updatedMin + ' ' + diffD + ' ' + STR.dAgo;
   }
   // endregion FUNC_fmtUpdatedAt
 
@@ -1287,7 +1293,9 @@
         points.push(days[d].points[p]);
       }
     }
-    var show = points.slice(0, 24);
+    // График: с текущего часа (включая текущий)
+    var chartStart = Date.now() - 60 * 60 * 1000;
+    var show = points.filter(function (pt) { return pt.epochMs >= chartStart; }).slice(0, 24);
     if (show.length < 2) { container.innerHTML = ''; return; }
     var W = show.length * 64;
     var H = 160;
@@ -1302,9 +1310,23 @@
       var y = padT + (1 - (pt.tempC - minT) / range) * (H - padT - padB);
       return { x: x, y: y, pt: pt };
     });
-    var linePts = coords.map(function (c) { return c.x + ',' + c.y; }).join(' ');
+    // Плавные кривые (Catmull-Rom → cubic Bezier)
+    var curveSegs = '';
+    for (var ci = 0; ci < coords.length - 1; ci++) {
+      var p0 = coords[ci - 1] || coords[ci];
+      var p1 = coords[ci];
+      var p2 = coords[ci + 1];
+      var p3 = coords[ci + 2] || coords[ci + 1];
+      var cp1x = p1.x + (p2.x - p0.x) / 6;
+      var cp1y = p1.y + (p2.y - p0.y) / 6;
+      var cp2x = p2.x - (p3.x - p1.x) / 6;
+      var cp2y = p2.y - (p3.y - p1.y) / 6;
+      curveSegs += ' C' + cp1x.toFixed(1) + ',' + cp1y.toFixed(1) + ' ' +
+        cp2x.toFixed(1) + ',' + cp2y.toFixed(1) + ' ' + p2.x + ',' + p2.y;
+    }
+    var linePath = 'M' + coords[0].x + ',' + coords[0].y + curveSegs;
     var areaPath = 'M' + coords[0].x + ',' + (H - padB) +
-      ' L' + coords.map(function (c) { return c.x + ',' + c.y; }).join(' L') +
+      ' L' + coords[0].x + ',' + coords[0].y + curveSegs +
       ' L' + coords[coords.length - 1].x + ',' + (H - padB) + ' Z';
     var svg = '<svg class="chart-svg" width="' + W + '" height="' + H +
       '" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">' +
@@ -1313,7 +1335,7 @@
       '<stop offset="100%" stop-color="var(--chart-fill-to)"/>' +
       '</linearGradient></defs>' +
       '<path d="' + areaPath + '" fill="url(#cfill)"/>' +
-      '<polyline class="chart-line-path" points="' + linePts +
+      '<path class="chart-line-path" d="' + linePath +
       '" fill="none" stroke="var(--chart-line)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     for (var i = 0; i < coords.length; i++) {
       var c = coords[i];
@@ -1347,13 +1369,16 @@
     if (!container) { return; }
     container.innerHTML = '';
     var days = bundle.days || [];
+    // Таблица: только будущие часы (исключая текущий)
+    var tableStart = Date.now();
     for (var d = 0; d < days.length; d++) {
       var day = days[d];
+      var futurePts = day.points.filter(function (pt) { return pt.epochMs > tableStart; });
+      if (futurePts.length === 0) { continue; }
       var header = el('div', { className: 'day-header', textContent: day.labelRu });
       container.appendChild(header);
-      var pts = day.points;
-      for (var i = 0; i < pts.length; i++) {
-        container.appendChild(_buildHourRow(pts[i], loc.timezone));
+      for (var i = 0; i < futurePts.length; i++) {
+        container.appendChild(_buildHourRow(futurePts[i], loc.timezone));
       }
     }
     Logger.info('RENDER', 'table', 'days=' + days.length, 'void');
