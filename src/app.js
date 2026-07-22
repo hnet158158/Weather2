@@ -1395,7 +1395,7 @@
     row.appendChild(el('span', { className: 'hour-temp', textContent: Format.fmtTempSigned(pt.tempC) + '°' }));
     var windCell = el('span', { className: 'hour-wind' });
     var arrowSpan = el('span', { className: 'wind-arrow' });
-    arrowSpan.innerHTML = Icons.windArrow(pt.windDirDeg, 10);
+    arrowSpan.innerHTML = Icons.windArrow(pt.windDirDeg, 18);
     windCell.appendChild(arrowSpan);
     windCell.appendChild(document.createTextNode(Format.fmtWind(pt.windSpeedMs)));
     row.appendChild(windCell);
