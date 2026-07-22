@@ -9,7 +9,7 @@
 // Иначе sw.js остаётся байт-идентичным → браузер не переустанавливает воркер →
 // клиенты продолжают получать старый закэшированный app-shell из предыдущего кэша.
 // На activate (ниже) старые кэши (key !== CACHE_NAME) удаляются автоматически.
-var CACHE_NAME = 'weather-pwa-v7';
+var CACHE_NAME = 'weather-pwa-v8';
 var APP_SHELL = [
   './',
   './index.html',

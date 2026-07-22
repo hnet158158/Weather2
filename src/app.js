@@ -1909,7 +1909,7 @@
       return;
     }
     try {
-      navigator.serviceWorker.register('sw.js').then(function (reg) {
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
         Logger.info('SW_REGISTER', 'registered', '', 'void');
         // Авто-prompt перезагрузки при обнаружении нового воркера
         reg.addEventListener('updatefound', function () {
