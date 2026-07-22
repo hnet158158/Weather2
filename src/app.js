@@ -1319,10 +1319,10 @@
       var c = coords[i];
       svg += '<circle cx="' + c.x + '" cy="' + c.y + '" r="3" fill="var(--chart-line)"/>';
       svg += '<text x="' + c.x + '" y="' + (c.y - 8) +
-        '" text-anchor="middle" font-size="11" font-family="var(--font-mono)" fill="var(--ink)">' +
+        '" text-anchor="middle" font-size="13" font-family="var(--font-mono)" fill="var(--ink)">' +
         Format.fmtTempSigned(c.pt.tempC) + '</text>';
       svg += '<text x="' + c.x + '" y="' + (H - padB + 16) +
-        '" text-anchor="middle" font-size="10" fill="var(--muted)">' +
+        '" text-anchor="middle" font-size="12" fill="var(--muted)">' +
         Format.fmtTimeHM(c.pt.epochMs, loc.timezone) + '</text>';
       svg += '<g transform="translate(' + (c.x - 8) + ',' + (H - padB + 20) + ')">' +
         Icons.weatherIcon(c.pt.iconId, 16) + '</g>';

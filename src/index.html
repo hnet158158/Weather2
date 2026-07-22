@@ -85,7 +85,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html {
-      font-size: 16px;
+      font-size: 19.2px; /* +20% к базовым 16px — все rem-размеры масштабируются */
       -webkit-text-size-adjust: 100%;
     }
 
@@ -524,7 +524,7 @@
       right: 0;
       top: 0;
       bottom: 0;
-      width: min(360px, 90vw);
+      width: min(288px, 72vw); /* -20% от прежних 360px/90vw */
       background: var(--paper);
       border-left: 1px solid var(--line);
       z-index: 100;
