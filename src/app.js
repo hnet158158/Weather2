@@ -1266,10 +1266,10 @@
     setText(document.getElementById('detail-feels'), Format.fmtTempSigned(cur.feelsLikeC) + '°');
     setText(document.getElementById('detail-pressure'), Format.fmtPressure(cur.pressureHPa));
     setText(document.getElementById('detail-uv'), cur.uvIndex != null ? String(cur.uvIndex) : '—');
-    setText(document.getElementById('detail-sunrise'),
-      cur.sunrise ? Format.fmtTimeHM(cur.sunrise, tz) : '—');
-    setText(document.getElementById('detail-sunset'),
-      cur.sunset ? Format.fmtTimeHM(cur.sunset, tz) : '—');
+    setText(document.getElementById('detail-sun'),
+      (cur.sunrise && cur.sunset)
+        ? Format.fmtTimeHM(cur.sunrise, tz) + ' / ' + Format.fmtTimeHM(cur.sunset, tz)
+        : '—');
     Logger.info('RENDER', 'current', 'temp=' + cur.tempC, 'void');
   }
   // endregion FUNC_renderCurrent
